@@ -11,7 +11,6 @@ from scipy.io import wavfile
 from scipy.stats import pearsonr
 from sklearn.preprocessing import StandardScaler
 
-
 def load_data(path_to_data, path_to_labels, prefix):
     # labels
     labels=pd.read_csv(path_to_labels+'labels.csv', sep=',')
@@ -107,22 +106,22 @@ def sample_minmax_normalization(data, min=None, max=None):
     return data, min, max
 
 def create_model(input_shape, output_shape):
-    model=Sequential()
-    model.add(Conv1D(input_shape=input_shape, filters=64, kernel_size=10, strides=1, activation='relu', padding='same'))
-    model.add(Dropout(0.3))
-    model.add(Conv1D(input_shape=input_shape, filters=128, kernel_size=8, strides=1, activation='relu', padding='same'))
-    model.add(Dropout(0.3))
-    model.add(MaxPool1D(pool_size=10))
-    model.add(Conv1D(filters=128, kernel_size=6, strides=1, activation='relu', padding='same'))
-    model.add(Dropout(0.3))
-    model.add(MaxPool1D(pool_size=8))
-    model.add(Conv1D(filters=256, kernel_size=6, strides=1, activation='relu', padding='same'       ))
-    model.add(Dropout(0.3))
-    model.add(MaxPool1D(pool_size=8))
-    model.add(LSTM(256, return_sequences=True))
-    model.add(LSTM(256, return_sequences=True))
-    model.add(TimeDistributed(Dense(1, activation='linear')))
-    model.add(Flatten())
+    model=tf.keras.layers.Sequential()
+    model.add(tf.keras.layers.Conv1D(input_shape=input_shape, filters=64, kernel_size=10, strides=1, activation='relu', padding='same'))
+    model.add(tf.keras.layers.Dropout(0.3))
+    model.add(tf.keras.layers.Conv1D(input_shape=input_shape, filters=128, kernel_size=8, strides=1, activation='relu', padding='same'))
+    model.add(tf.keras.layers.Dropout(0.3))
+    model.add(tf.keras.layers.MaxPool1D(pool_size=10))
+    model.add(tf.keras.layers.Conv1D(filters=128, kernel_size=6, strides=1, activation='relu', padding='same'))
+    model.add(tf.keras.layers.Dropout(0.3))
+    model.add(tf.keras.layers.MaxPool1D(pool_size=8))
+    model.add(tf.keras.layers.Conv1D(filters=256, kernel_size=6, strides=1, activation='relu', padding='same'       ))
+    model.add(tf.keras.layers.Dropout(0.3))
+    model.add(tf.keras.layers.MaxPool1D(pool_size=8))
+    model.add(tf.keras.layers.LSTM(256, return_sequences=True))
+    model.add(tf.keras.layers.LSTM(256, return_sequences=True))
+    model.add(tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(1, activation='linear')))
+    model.add(tf.keras.layers.Flatten())
     print(model.summary())
 
     return model
