@@ -5,8 +5,8 @@ from Breathing_1.end_to_end.utils import load_data, prepare_data, create_model, 
     correlation_coefficient_loss
 import numpy as np
 # train data
-path_to_train_data='/content/drive/My Drive/Colab Notebooks/ComParE2020_Breathing/wav/'
-path_to_train_labels='/content/drive/My Drive/Colab Notebooks/ComParE2020_Breathing/lab/'
+path_to_train_data='/content/drive/My Drive/ComParE2020_Breathing/wav/'
+path_to_train_labels='/content/drive/My Drive/ComParE2020_Breathing/lab/'
 train_data, train_labels, train_dict, frame_rate=load_data(path_to_train_data, path_to_train_labels, 'train')
 prepared_train_data, prepared_train_labels, prepared_train_labels_timesteps=prepare_data(train_data, train_labels, train_dict, frame_rate, 256000, 102400)
 # instance normalization
