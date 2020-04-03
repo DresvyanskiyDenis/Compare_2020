@@ -36,7 +36,7 @@ prepared_val_labels=prepared_val_labels.reshape(((-1,)+prepared_val_labels.shape
 
 model=create_model(input_shape=input_shape, output_shape=output_shape)
 model.compile(optimizer='Adam', loss=correlation_coefficient_loss, metrics=['mse', 'mae'])
-batch_size=55
+batch_size=20
 epochs=200
 coefs=[]
 best=0
