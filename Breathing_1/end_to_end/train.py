@@ -1,8 +1,8 @@
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]="-1"
 # test
-from Breathing.end_to_end.utils import load_data, prepare_data, create_model, concatenate_prediction, pearson_coef, \
-    instance_normalization, correlation_coefficient_loss, sample_minmax_normalization
+from Breathing_1.end_to_end.utils import load_data, prepare_data, create_model, concatenate_prediction, pearson_coef, \
+    correlation_coefficient_loss
 import numpy as np
 # train data
 path_to_train_data='/content/drive/My Drive/Colab Notebooks/ComParE2020_Breathing/wav/'
