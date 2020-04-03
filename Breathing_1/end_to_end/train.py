@@ -32,9 +32,14 @@ prepared_val_data=prepared_val_data.reshape((prepared_val_data.shape+(1,)))
 prepared_val_data=prepared_val_data.reshape(((-1,)+prepared_val_data.shape[2:]))
 prepared_val_data=prepared_val_data.astype('float32')
 prepared_val_labels=prepared_val_labels.reshape(((-1,)+prepared_val_labels.shape[2:]))
-
+need_to_load_weights=False
+path_to_tmp_model='tmp_model/'
+if not os.path.exists(path_to_tmp_model):
+    os.mkdir(path_to_tmp_model)
 
 model=create_model(input_shape=input_shape, output_shape=output_shape)
+if need_to_load_weights==True:
+    model.load_weights(path_to_tmp_model+'model_weights.h5')
 model.compile(optimizer='Adam', loss=correlation_coefficient_loss, metrics=['mse', 'mae'])
 batch_size=40
 epochs=200
@@ -43,6 +48,8 @@ best=0
 for i in range(epochs):
     model.fit(prepared_train_data, prepared_train_labels, batch_size=batch_size, epochs=1,
           shuffle=True, verbose=1, use_multiprocessing=True)
+    model.save(path_to_tmp_model+'model.h5')
+    model.save_weights(path_to_tmp_model+'model_weights.h5')
     if i%3==0 and i>10:
         predicted_labels=model.predict(prepared_val_data, batch_size=batch_size)
         concatenated_predicted_labels=concatenate_prediction(true_values=val_labels, predicted_values=predicted_labels,
