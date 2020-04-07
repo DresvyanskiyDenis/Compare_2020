@@ -128,18 +128,23 @@ def create_model(input_shape, output_shape):
 
     return model
 
-def correlation_coefficient_loss(y_true, y_pred):
-    x = y_true
-    y = y_pred
-    mx = K.mean(x)
-    my = K.mean(y)
-    xm, ym = x-mx, y-my
-    r_num = K.sum(tf.multiply(xm,ym))
-    r_den = K.sqrt(tf.multiply(K.sum(K.square(xm)), K.sum(K.square(ym))))
-    r = r_num / r_den
-
-    r = K.maximum(K.minimum(r, 1.0), -1.0)
-    return 1 - r
+def pearson_corr(y_true, y_pred):
+    x=y_true
+    y=y_pred
+    mx=K.mean(x, axis=1, keepdims=True)
+    my=K.mean(y, axis=1, keepdims=True)
+    xm,ym=x-mx,y-my
+    r_num=K.sum(tf.multiply(xm, ym), axis=1)
+    sum_square_x=K.sum(K.square(xm), axis=1)
+    sum_square_y = K.sum(K.square(ym), axis=1)
+    sqrt_x = tf.sqrt(sum_square_x)
+    sqrt_y = tf.sqrt(sum_square_y)
+    r_den=tf.multiply(sqrt_x, sqrt_y)
+    result=tf.divide(r_num, r_den)
+    #tf.print('result:', result)
+    result=K.mean(result)
+    #tf.print('mean result:', result)
+    return 1 - result
 
 def pearson_coef(y_true, y_pred):
     return scipy.stats.pearsonr(y_true, y_pred)
