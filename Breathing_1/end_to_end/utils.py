@@ -117,7 +117,7 @@ def create_model(input_shape, output_shape):
     model.add(tf.keras.layers.Conv1D(filters=128, kernel_size=6, strides=1, activation='relu', padding='same'       ))
     model.add(tf.keras.layers.Dropout(0.3))
     model.add(tf.keras.layers.MaxPool1D(pool_size=4))
-    model.add(tf.keras.layers.Conv1D(filters=256, kernel_size=5, strides=1, activation='relu', padding='same'       ))
+    model.add(tf.keras.layers.Conv1D(filters=256, kernel_size=6, strides=1, activation='relu', padding='same'       ))
     model.add(tf.keras.layers.Dropout(0.3))
     model.add(tf.keras.layers.AvgPool1D(pool_size=4))
     model.add(tf.keras.layers.LSTM(256, return_sequences=True))
@@ -128,7 +128,7 @@ def create_model(input_shape, output_shape):
 
     return model
 
-def pearson_corr(y_true, y_pred):
+def correlation_coefficient_loss(y_true, y_pred):
     x=y_true
     y=y_pred
     mx=K.mean(x, axis=1, keepdims=True)
