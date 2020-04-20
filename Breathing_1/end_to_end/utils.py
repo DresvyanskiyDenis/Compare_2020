@@ -106,7 +106,7 @@ def sample_minmax_normalization(data, min=None, max=None):
     data=tmp_data.reshape(result_shape)
     return data, min, max
 
-def create_model(input_shape, output_shape):
+def create_model(input_shape):
     model=tf.keras.Sequential()
     model.add(tf.keras.layers.Conv1D(input_shape=input_shape, filters=64, kernel_size=10, strides=1, activation='relu', padding='same'))
     model.add(tf.keras.layers.Dropout(0.3))
@@ -114,15 +114,15 @@ def create_model(input_shape, output_shape):
     model.add(tf.keras.layers.Conv1D(filters=128, kernel_size=8, strides=1, activation='relu', padding='same'))
     model.add(tf.keras.layers.Dropout(0.3))
     model.add(tf.keras.layers.MaxPool1D(pool_size=4))
-    model.add(tf.keras.layers.Conv1D(filters=128, kernel_size=6, strides=1, activation='relu', padding='same'       ))
+    model.add(tf.keras.layers.Conv1D(filters=256, kernel_size=6, strides=1, activation='relu', padding='same'       ))
     model.add(tf.keras.layers.Dropout(0.3))
     model.add(tf.keras.layers.MaxPool1D(pool_size=4))
-    model.add(tf.keras.layers.Conv1D(filters=256, kernel_size=6, strides=1, activation='relu', padding='same'       ))
+    model.add(tf.keras.layers.Conv1D(filters=256, kernel_size=5, strides=1, activation='relu', padding='same'       ))
     model.add(tf.keras.layers.Dropout(0.3))
     model.add(tf.keras.layers.AvgPool1D(pool_size=4))
     model.add(tf.keras.layers.LSTM(256, return_sequences=True))
     model.add(tf.keras.layers.LSTM(256, return_sequences=True))
-    model.add(tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(1, activation='linear')))
+    model.add(tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(1, activation='tanh')))
     model.add(tf.keras.layers.Flatten())
     print(model.summary())
 
