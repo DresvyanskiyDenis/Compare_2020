@@ -17,16 +17,20 @@ def divide_data_on_parts(data, labels, timesteps, filenames_dict, parts=2):
         tmp_labels=labels[start_point:(start_point+length_part)]
         tmp_timesteps = timesteps[start_point:(start_point + length_part)]
         tmp_filenames_dict={}
+        idx=0
         for j in range(start_point,start_point+length_part):
-            tmp_filenames_dict[j]=list(filenames_dict.values())[j]
+            tmp_filenames_dict[idx]=list(filenames_dict.values())[j]
+            idx+=1
         list_parts.append((tmp_data, tmp_labels, tmp_timesteps, tmp_filenames_dict))
         start_point+=length_part
     tmp_data = data[start_point:]
     tmp_labels = labels[start_point:]
     tmp_timesteps = timesteps[start_point:]
     tmp_filenames_dict = {}
+    idx = 0
     for j in range(start_point, data.shape[0]):
-        tmp_filenames_dict[j] = list(filenames_dict.values())[j]
+        tmp_filenames_dict[idx] = list(filenames_dict.values())[j]
+        idx += 1
     list_parts.append((tmp_data, tmp_labels, tmp_timesteps,tmp_filenames_dict))
     return list_parts
 
@@ -104,7 +108,7 @@ devel_data, devel_labels, devel_dict, frame_rate=load_data(path_to_devel_data, p
 prepared_devel_data, prepared_devel_labels,prepared_devel_labels_timesteps=prepare_data(devel_data, devel_labels, devel_dict, frame_rate, length_sequence, step_sequence)
 devel_parts=divide_data_on_parts(prepared_devel_data, prepared_devel_labels, prepared_devel_labels_timesteps, parts=data_parts, filenames_dict=devel_dict)
 
-for index_of_part in range(len(train_parts)+len(devel_parts)):
+for index_of_part in range(0, len(train_parts)+len(devel_parts)):
     best_result=0
     coefs=[]
     train_dataset, val_dataset=form_train_and_val_datasets(train_parts, devel_parts, index_for_validation_part=index_of_part)
