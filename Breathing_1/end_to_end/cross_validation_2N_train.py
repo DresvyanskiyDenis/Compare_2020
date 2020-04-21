@@ -5,7 +5,7 @@ import numpy as np
 import scipy
 import tensorflow as tf
 
-from Breathing_1.end_to_end.utils import create_model, load_data, prepare_data, correlation_coefficient_loss
+from utils import create_model, load_data, prepare_data, correlation_coefficient_loss
 
 
 def divide_data_on_parts(data, labels, timesteps, filenames_dict, parts=2):
@@ -84,7 +84,7 @@ def choose_real_labs_only_with_filenames(labels, filenames):
 # params
 length_sequence=256000
 step_sequence=102400
-batch_size=10
+batch_size=45
 epochs=150
 data_parts=2
 path_to_save_best_model='best_models/'
@@ -95,15 +95,15 @@ if not os.path.exists(path_to_tmp_model):
     os.mkdir(path_to_tmp_model)
 
 # train data
-path_to_train_data='C:/Users/Dresvyanskiy/Desktop/ComParE2020_Breathing/wav/'
-path_to_train_labels='C:/Users/Dresvyanskiy/Desktop/ComParE2020_Breathing/lab/'
+path_to_train_data='/content/drive/My Drive/ComParE2020_Breathing/wav/'
+path_to_train_labels='/content/drive/My Drive/ComParE2020_Breathing/lab/'
 train_data, train_labels, train_dict, frame_rate=load_data(path_to_train_data, path_to_train_labels, 'train')
 prepared_train_data, prepared_train_labels, prepared_train_labels_timesteps=prepare_data(train_data, train_labels, train_dict, frame_rate, length_sequence, step_sequence)
 train_parts=divide_data_on_parts(prepared_train_data, prepared_train_labels, prepared_train_labels_timesteps, parts=data_parts, filenames_dict=train_dict)
 
 # devel data
-path_to_devel_data='C:/Users/Dresvyanskiy/Desktop/ComParE2020_Breathing/wav/'
-path_to_devel_labels='C:/Users/Dresvyanskiy/Desktop/ComParE2020_Breathing/lab/'
+path_to_devel_data='/content/drive/My Drive/ComParE2020_Breathing/wav/'
+path_to_devel_labels='/content/drive/My Drive/ComParE2020_Breathing/lab/'
 devel_data, devel_labels, devel_dict, frame_rate=load_data(path_to_devel_data, path_to_devel_labels, 'devel')
 prepared_devel_data, prepared_devel_labels,prepared_devel_labels_timesteps=prepare_data(devel_data, devel_labels, devel_dict, frame_rate, length_sequence, step_sequence)
 devel_parts=divide_data_on_parts(prepared_devel_data, prepared_devel_labels, prepared_devel_labels_timesteps, parts=data_parts, filenames_dict=devel_dict)
@@ -116,7 +116,7 @@ for index_of_part in range(0, len(train_parts)+len(devel_parts)):
     val_d, val_lbs, val_timesteps, val_filenames_dict=extract_and_reshape_list_of_parts(list_of_parts=val_dataset)
     val_filenames_dict=val_filenames_dict[0]
     train_d, train_lbs=reshaping_data_for_model(train_d, train_lbs)
-    val_d, _=reshaping_data_for_model(val_d, val_lbs)
+    val_d, _val_lbs=reshaping_data_for_model(val_d, val_lbs)
     if index_of_part<(len(train_parts)+len(devel_parts))/2:
         ground_truth_labels=choose_real_labs_only_with_filenames(train_labels,list(val_filenames_dict.values()))
     else:
@@ -127,9 +127,10 @@ for index_of_part in range(0, len(train_parts)+len(devel_parts)):
         permutations=np.random.permutation(train_d.shape[0])
         train_d, train_lbs=train_d[permutations], train_lbs[permutations]
         model.fit(train_d, train_lbs, batch_size=batch_size, epochs=1,
-                  shuffle=True, verbose=1, use_multiprocessing=True)
+                  shuffle=True, verbose=1, use_multiprocessing=True,
+                  validation_data=(val_d, _val_lbs))
         model.save_weights(path_to_tmp_model+'tmp_model_weights_idx_of_part_'+str(index_of_part)+'.h5')
-        if True:
+        if epoch>2 and epoch%2==0:
             predicted_labels = model.predict(val_d, batch_size=batch_size)
             concatenated_predicted_labels=concatenate_prediction(predicted_labels, val_timesteps, val_filenames_dict)
             prc_coef=scipy.stats.pearsonr(ground_truth_labels.iloc[:,2].values,concatenated_predicted_labels.iloc[:,2].values)
