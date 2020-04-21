@@ -4,9 +4,13 @@ import pandas as pd
 import numpy as np
 import scipy
 import tensorflow as tf
+import gc
 
 from utils import create_model, load_data, prepare_data, correlation_coefficient_loss
 
+class MyCustomCallback(tf.keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs=None):
+        gc.collect()
 
 def divide_data_on_parts(data, labels, timesteps, filenames_dict, parts=2):
     list_parts=[]
@@ -128,9 +132,9 @@ for index_of_part in range(0, len(train_parts)+len(devel_parts)):
         train_d, train_lbs=train_d[permutations], train_lbs[permutations]
         model.fit(train_d, train_lbs, batch_size=batch_size, epochs=1,
                   shuffle=True, verbose=1, use_multiprocessing=True,
-                  validation_data=(val_d, _val_lbs))
+                  validation_data=(val_d, _val_lbs), callbacks=[MyCustomCallback()])
         model.save_weights(path_to_tmp_model+'tmp_model_weights_idx_of_part_'+str(index_of_part)+'.h5')
-        if epoch>2 and epoch%2==0:
+        if epoch%2==0:
             predicted_labels = model.predict(val_d, batch_size=batch_size)
             concatenated_predicted_labels=concatenate_prediction(predicted_labels, val_timesteps, val_filenames_dict)
             prc_coef=scipy.stats.pearsonr(ground_truth_labels.iloc[:,2].values,concatenated_predicted_labels.iloc[:,2].values)
