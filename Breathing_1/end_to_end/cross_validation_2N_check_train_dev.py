@@ -36,13 +36,13 @@ devel_data, devel_labels, devel_dict, frame_rate=load_data(path_to_devel_data, p
 prepared_devel_data, prepared_devel_labels,prepared_devel_labels_timesteps=prepare_data(devel_data, devel_labels, devel_dict, frame_rate, length_sequence, step_sequence)
 devel_parts=divide_data_on_parts(prepared_devel_data, prepared_devel_labels, prepared_devel_labels_timesteps, parts=data_parts, filenames_dict=devel_dict)
 
-ground_truth_labels=pd.concat((train_labels, devel_labels), axis=0)
+ground_truth_labels=pd.DataFrame(columns=train_labels.columns)
 total_predicted_labels=pd.DataFrame(columns=train_labels.columns)
 total_parts=[train_parts[0], train_parts[1], devel_parts[0], devel_parts[1]]
 
 
 for i in range(len(paths_to_models)):
-    part=total_parts[i]
+    part=[total_parts[i]]
     part_d, part_lbs, part_timesteps, part_filenames_dict = extract_and_reshape_list_of_parts(list_of_parts=part)
     part_filenames_dict = part_filenames_dict[0]
     part_d, _ = reshaping_data_for_model(part_d, part_lbs)
@@ -52,10 +52,17 @@ for i in range(len(paths_to_models)):
     predicted_labels = model.predict(part_d, batch_size=batch_size)
     concatenated_predicted_labels = concatenate_prediction(predicted_labels, part_timesteps, part_filenames_dict)
     total_predicted_labels = pd.concat((total_predicted_labels, concatenated_predicted_labels), axis=0)
+    if i<2:
+        ground_truth_labels_part = choose_real_labs_only_with_filenames(train_labels, list(part_filenames_dict.values()))
+    else:
+        ground_truth_labels_part = choose_real_labs_only_with_filenames(devel_labels, list(part_filenames_dict.values()))
+    r = scipy.stats.pearsonr(ground_truth_labels_part.iloc[:, 2].values, concatenated_predicted_labels.iloc[:, 2].values)
+    ground_truth_labels = pd.concat((ground_truth_labels, ground_truth_labels_part), axis=0)
+    print('r on part ', str(i)+':', r)
     del model
     K.clear_session()
     gc.collect()
 
 
-r=scipy.stats.pearsonr(ground_truth_labels[:,2].values,total_predicted_labels.iloc[:,2].values)
+r=scipy.stats.pearsonr(ground_truth_labels.iloc[:,2].values,total_predicted_labels.iloc[:,2].values)
 print('correlation, total:',r)

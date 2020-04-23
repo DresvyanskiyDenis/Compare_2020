@@ -14,7 +14,7 @@ length_sequence=256000
 step_sequence=102400
 path_to_model_0='C:\\Users\\Dresvyanskiy\\Desktop\\Projects\\Compare_2020\\models\\best_model_weights_idx_of_part_0.h5'
 path_to_model_1='C:\\Users\\Dresvyanskiy\\Desktop\\Projects\\Compare_2020\\models\\best_model_weights_idx_of_part_1.h5'
-path_to_model_2='C:\\Users\\Dresvyanskiy\\Desktop\\Projects\\Compare_2020\\models\\best_model_weights_idx_of_part_2.h5'
+path_to_model_2='C:\\Users\\Dresvyanskiy\\Desktop\\Projects\\Compare_2020\\models\\best_model_weights_idx_of_part_2_first.h5'
 path_to_model_3='C:\\Users\\Dresvyanskiy\\Desktop\\Projects\\Compare_2020\\models\\best_model_weights_idx_of_part_3.h5'
 paths_to_models=[path_to_model_0, path_to_model_1, path_to_model_2, path_to_model_3]
 # test data
