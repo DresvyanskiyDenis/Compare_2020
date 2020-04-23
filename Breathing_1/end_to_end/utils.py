@@ -15,7 +15,11 @@ def load_data(path_to_data, path_to_labels, prefix):
     # labels
     labels=pd.read_csv(path_to_labels+'labels.csv', sep=',')
     labels = labels.loc[labels['filename'].str.contains(prefix)]
-    labels['upper_belt']=labels['upper_belt'].astype('float32')
+    if not prefix=='test':
+        labels['upper_belt']=labels['upper_belt'].astype('float32')
+    else:
+        labels['upper_belt']=0
+        labels['upper_belt']=labels['upper_belt'].astype('float32')
 
     # data
     fs, example = wavfile.read(path_to_data + labels.iloc[0, 0])

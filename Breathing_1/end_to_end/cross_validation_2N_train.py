@@ -6,7 +6,7 @@ import scipy
 import tensorflow as tf
 import gc
 
-from utils import create_model, load_data, prepare_data, correlation_coefficient_loss
+from Breathing_1.end_to_end.utils import create_model, load_data, prepare_data, correlation_coefficient_loss
 
 class MyCustomCallback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs=None):
@@ -85,7 +85,7 @@ def choose_real_labs_only_with_filenames(labels, filenames):
 
 
 
-# params
+'''# params
 length_sequence=256000
 step_sequence=102400
 batch_size=45
@@ -142,4 +142,4 @@ for index_of_part in range(0, len(train_parts)+len(devel_parts)):
             coefs.append(np.abs(prc_coef[0]))
             if prc_coef[0] > best_result:
                 best_result = prc_coef[0]
-                model.save_weights(path_to_save_best_model+'best_model_weights_idx_of_part_'+str(index_of_part)+'.h5')
+                model.save_weights(path_to_save_best_model+'best_model_weights_idx_of_part_'+str(index_of_part)+'.h5')'''
