@@ -112,7 +112,7 @@ devel_data, devel_labels, devel_dict, frame_rate=load_data(path_to_devel_data, p
 prepared_devel_data, prepared_devel_labels,prepared_devel_labels_timesteps=prepare_data(devel_data, devel_labels, devel_dict, frame_rate, length_sequence, step_sequence)
 devel_parts=divide_data_on_parts(prepared_devel_data, prepared_devel_labels, prepared_devel_labels_timesteps, parts=data_parts, filenames_dict=devel_dict)
 
-for index_of_part in range(0, len(train_parts)+len(devel_parts)):
+for index_of_part in range(0, 3):
     best_result=0
     coefs=[]
     train_dataset, val_dataset=form_train_and_val_datasets(train_parts, devel_parts, index_for_validation_part=index_of_part)
@@ -131,10 +131,11 @@ for index_of_part in range(0, len(train_parts)+len(devel_parts)):
         permutations=np.random.permutation(train_d.shape[0])
         train_d, train_lbs=train_d[permutations], train_lbs[permutations]
         model.fit(train_d, train_lbs, batch_size=batch_size, epochs=1,
-                  shuffle=True, verbose=1, use_multiprocessing=True,
+                  shuffle=True, verbose=1, use_multiprocessing=True, 
                   validation_data=(val_d, _val_lbs), callbacks=[MyCustomCallback()])
-        model.save_weights(path_to_tmp_model+'tmp_model_weights_idx_of_part_'+str(index_of_part)+'.h5')
-        if epoch%2==0:
+        model.save_weights(path_to_tmp_model+'tmp_model_weights_idx_of_part_'+str(index_of_part)
+                          +'_epoch_'+str(epoch)+'.h5')
+        if epoch>2 and epoch%2==0:
             predicted_labels = model.predict(val_d, batch_size=batch_size)
             concatenated_predicted_labels=concatenate_prediction(predicted_labels, val_timesteps, val_filenames_dict)
             prc_coef=scipy.stats.pearsonr(ground_truth_labels.iloc[:,2].values,concatenated_predicted_labels.iloc[:,2].values)
@@ -142,4 +143,6 @@ for index_of_part in range(0, len(train_parts)+len(devel_parts)):
             coefs.append(np.abs(prc_coef[0]))
             if prc_coef[0] > best_result:
                 best_result = prc_coef[0]
-                model.save_weights(path_to_save_best_model+'best_model_weights_idx_of_part_'+str(index_of_part)+'.h5')'''
+                model.save_weights(path_to_save_best_model+'best_model_weights_idx_of_part_'+str(index_of_part)+'.h5')
+    del model
+    K.clear_session()'''
