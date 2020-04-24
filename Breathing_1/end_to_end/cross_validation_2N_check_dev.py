@@ -16,6 +16,7 @@ def smooth_concatenated_labels(concatenated_labels, window_size):
     for i in range(data.shape[0]):
         res=smoothing(data[i], window_size)
         data[i]=res
+    result['upper_belt']=data.reshape((-1,))
     return result
 
 
@@ -34,6 +35,7 @@ path_to_devel_labels='C:/Users/Dresvyanskiy/Desktop/ComParE2020_Breathing/lab/'
 devel_data, devel_labels, devel_dict, frame_rate=load_data(path_to_devel_data, path_to_devel_labels, 'devel')
 prepared_devel_data, prepared_devel_labels,prepared_devel_labels_timesteps=prepare_data(devel_data, devel_labels, devel_dict, frame_rate, length_sequence, step_sequence)
 devel_parts=divide_data_on_parts(prepared_devel_data, prepared_devel_labels, prepared_devel_labels_timesteps, parts=data_parts, filenames_dict=devel_dict)
+
 
 total_predicted_labels=pd.DataFrame(columns=devel_labels.columns)
 # part 1
