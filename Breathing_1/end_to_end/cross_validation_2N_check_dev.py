@@ -36,7 +36,6 @@ prepared_devel_data, prepared_devel_labels,prepared_devel_labels_timesteps=prepa
 devel_parts=divide_data_on_parts(prepared_devel_data, prepared_devel_labels, prepared_devel_labels_timesteps, parts=data_parts, filenames_dict=devel_dict)
 
 total_predicted_labels=pd.DataFrame(columns=devel_labels.columns)
-
 # part 1
 part_1=[devel_parts[0]]
 part_1_d, part_1_lbs, part_1_timesteps, part_1_filenames_dict = extract_and_reshape_list_of_parts(list_of_parts=part_1)
@@ -73,7 +72,7 @@ ground_truth_labels = choose_real_labs_only_with_filenames(devel_labels, list(pa
 r=scipy.stats.pearsonr(ground_truth_labels.iloc[:,2].values,concatenated_predicted_labels.iloc[:,2].values)
 print('correlation, second part:',r)
 # deleting all variables
-del model_for_part_1
+del model_for_part_2
 K.clear_session()
 gc.collect()
 
@@ -86,7 +85,7 @@ r=scipy.stats.pearsonr(devel_labels.iloc[:,2].values,total_predicted_labels.iloc
 print('correlation, total:',r)
 
 print('TEST SMOOTHING')
-for size_window in range(10,200,1):
+for size_window in range(11,202,2):
     smoothed=smooth_concatenated_labels(total_predicted_labels, size_window)
     r = scipy.stats.pearsonr(devel_labels.iloc[:, 2].values, smoothed.iloc[:, 2].values)
     print('size_window=',size_window,'  correlation, total:', r)

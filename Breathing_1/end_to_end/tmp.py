@@ -1,4 +1,4 @@
-import numpy as np
+'''import numpy as np
 from scipy.stats import pearsonr
 from keras import backend as K
 import tensorflow as tf
@@ -37,4 +37,11 @@ def pearson_corr(y_true, y_pred):
     #tf.print('mean result:', result)
     return 1-result
 
-pearson_corr(x_tf, y_tf)
+pearson_corr(x_tf, y_tf)'''
+
+import numpy as np
+
+from Breathing_1.end_to_end.utils import smoothing
+
+arr=np.array([1,2,3,4,5,6,7,8])
+res=smoothing(arr, 5)

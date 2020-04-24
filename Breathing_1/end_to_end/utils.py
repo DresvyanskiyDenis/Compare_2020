@@ -237,6 +237,8 @@ def concatenate_prediction_test(true_values, predicted_values, timesteps_labels,
     return result_predicted_values
 
 def smoothing(x, size_window):
+    if size_window%2==0:
+        raise ValueError('size of window must be odd')
     weights=hanning(size_window)
     result=np.zeros(x.shape)
     for i in range(x.shape[0]):
