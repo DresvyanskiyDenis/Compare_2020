@@ -1,20 +1,31 @@
 import gc
 
 import scipy
+from scipy.signal import hanning
 
 from Breathing_1.end_to_end.cross_validation_2N_train import divide_data_on_parts, extract_and_reshape_list_of_parts, \
     reshaping_data_for_model, choose_real_labs_only_with_filenames, concatenate_prediction
-from Breathing_1.end_to_end.utils import create_model, load_data, prepare_data, correlation_coefficient_loss
+from Breathing_1.end_to_end.utils import create_model, load_data, prepare_data, correlation_coefficient_loss, smoothing
 import pandas as pd
 import numpy as np
 from keras import backend as K
+
+def smooth_concatenated_labels(concatenated_labels, window_size):
+    result=concatenated_labels.copy(deep=True)
+    data=np.array(result['upper_belt']).reshape((np.unique(result['filename']).shape[0], -1))
+    for i in range(data.shape[0]):
+        res=smoothing(data[i], window_size)
+        data[i]=res
+    return result
+
+
 
 data_parts=2
 batch_size=30
 # params
 length_sequence=256000
 step_sequence=102400
-path_to_model_for_part_1='C:\\Users\\Dresvyanskiy\\Desktop\\Projects\\Compare_2020\\models\\best_model_weights_idx_of_part_2.h5'
+path_to_model_for_part_1='C:\\Users\\Dresvyanskiy\\Desktop\\Projects\\Compare_2020\\models\\best_model_weights_idx_of_part_2_first.h5'
 path_to_model_for_part_2='C:\\Users\\Dresvyanskiy\\Desktop\\Projects\\Compare_2020\\models\\best_model_weights_idx_of_part_3.h5'
 
 # devel data
@@ -73,3 +84,9 @@ total_predicted_labels=total_predicted_labels.sort_values(by=['filename', 'timeF
 
 r=scipy.stats.pearsonr(devel_labels.iloc[:,2].values,total_predicted_labels.iloc[:,2].values)
 print('correlation, total:',r)
+
+print('TEST SMOOTHING')
+for size_window in range(10,200,1):
+    smoothed=smooth_concatenated_labels(total_predicted_labels, size_window)
+    r = scipy.stats.pearsonr(devel_labels.iloc[:, 2].values, smoothed.iloc[:, 2].values)
+    print('size_window=',size_window,'  correlation, total:', r)

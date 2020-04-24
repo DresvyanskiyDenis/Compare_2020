@@ -8,6 +8,7 @@ from keras.layers import Conv1D, MaxPool1D, LSTM, Dense, Dropout, Flatten, TimeD
 from keras import backend as K
 from matplotlib import pyplot as plt
 from scipy.io import wavfile
+from scipy.signal import hanning
 from scipy.stats import pearsonr
 from sklearn.preprocessing import StandardScaler
 
@@ -234,3 +235,21 @@ def concatenate_prediction_test(true_values, predicted_values, timesteps_labels,
         #print('concatenation...instance:', instance_idx, '  done')
 
     return result_predicted_values
+
+def smoothing(x, size_window):
+    weights=hanning(size_window)
+    result=np.zeros(x.shape)
+    for i in range(x.shape[0]):
+        start=int(i-(size_window-1)/2)
+        end=int(i+1+(size_window-1)/2)
+        data=[]
+        for j in range(start, end):
+            if j<0 or j>(x.shape[0]-1):
+                data.append(0)
+            else:
+                data.append(x[j])
+        data=np.array(data)
+        data=np.multiply(weights, data)
+        sum=data.sum()/size_window
+        result[i]=sum
+    return result
