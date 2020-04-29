@@ -261,6 +261,7 @@ def smoothing(x, size_window):
         raise ValueError('size of window must be odd')
     weights=hanning(size_window)
     result=np.zeros(x.shape)
+    num_to_average=size_window
     for i in range(x.shape[0]):
         start=int(i-(size_window-1)/2)
         end=int(i+1+(size_window-1)/2)
@@ -268,10 +269,11 @@ def smoothing(x, size_window):
         for j in range(start, end):
             if j<0 or j>(x.shape[0]-1):
                 data.append(0)
+                num_to_average-=1 # because you need average your sum only on existing numbers
             else:
                 data.append(x[j])
         data=np.array(data)
         data=np.multiply(weights, data)
-        sum=data.sum()/size_window
+        sum=data.sum()/num_to_average
         result[i]=sum
     return result
