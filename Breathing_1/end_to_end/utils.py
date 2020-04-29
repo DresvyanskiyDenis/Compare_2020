@@ -111,26 +111,46 @@ def sample_minmax_normalization(data, min=None, max=None):
     data=tmp_data.reshape(result_shape)
     return data, min, max
 
-def create_model(input_shape):
-    model=tf.keras.Sequential()
-    model.add(tf.keras.layers.Conv1D(input_shape=input_shape, filters=64, kernel_size=10, strides=1, activation='relu', padding='same'))
-    model.add(tf.keras.layers.Dropout(0.3))
-    model.add(tf.keras.layers.MaxPool1D(pool_size=10))
-    model.add(tf.keras.layers.Conv1D(filters=128, kernel_size=8, strides=1, activation='relu', padding='same'))
-    model.add(tf.keras.layers.Dropout(0.3))
-    model.add(tf.keras.layers.MaxPool1D(pool_size=4))
-    model.add(tf.keras.layers.Conv1D(filters=256, kernel_size=6, strides=1, activation='relu', padding='same'       ))
-    model.add(tf.keras.layers.Dropout(0.3))
-    model.add(tf.keras.layers.MaxPool1D(pool_size=4))
-    model.add(tf.keras.layers.Conv1D(filters=256, kernel_size=5, strides=1, activation='relu', padding='same'       ))
-    model.add(tf.keras.layers.Dropout(0.3))
-    model.add(tf.keras.layers.AvgPool1D(pool_size=4))
-    model.add(tf.keras.layers.LSTM(256, return_sequences=True))
-    model.add(tf.keras.layers.LSTM(256, return_sequences=True))
-    model.add(tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(1, activation='tanh')))
-    model.add(tf.keras.layers.Flatten())
-    print(model.summary())
+def conv_block(input_tensor,filters, block_number):
+    filter1, filter2, filter3=filters
+    x = tf.keras.layers.Conv1D(filters=filter1, kernel_size=1, strides=1, activation=None, padding='same', kernel_regularizer=tf.keras.regularizers.l2(1e-4))(input_tensor)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.Activation(activation='relu')(x)
+    x = tf.keras.layers.Conv1D(filters=filter2, kernel_size=5, strides=1, activation=None, padding='same', kernel_regularizer=tf.keras.regularizers.l2(1e-4))(x)
+    x = tf.keras.layers.BatchNormalization()(x)
+    x = tf.keras.layers.Activation(activation='relu')(x)
+    x = tf.keras.layers.Conv1D(filters=filter3, kernel_size=1, strides=1, activation=None, padding='same', kernel_regularizer=tf.keras.regularizers.l2(1e-4))(x)
+    x = tf.keras.layers.BatchNormalization(name='last_conv_bn_block_'+str(block_number))(x)
+    shortcut = tf.keras.layers.Conv1D(filters=filter3, kernel_size=1, strides=1, activation=None, use_bias=False, kernel_regularizer=tf.keras.regularizers.l2(1e-4))(input_tensor)
+    shortcut = tf.keras.layers.BatchNormalization(name='shortcut_bn_block_'+str(block_number))(shortcut)
+    x = tf.keras.layers.add([x, shortcut])
+    x = tf.keras.layers.Activation('relu')(x)
+    return x
 
+
+def create_model(input_shape):
+    input=tf.keras.layers.Input(shape=input_shape)
+    x=tf.keras.layers.Conv1D(filters=64, kernel_size=8, strides=1, activation=None, padding='same', kernel_regularizer=tf.keras.regularizers.l2(1e-4))(input)
+    x=tf.keras.layers.BatchNormalization(name='last_conv_bn_block_1')(x)
+    x=tf.keras.layers.Activation(activation='relu')(x)
+    output_block1=tf.keras.layers.MaxPool1D(pool_size=10)(x)
+
+    x=conv_block(output_block1, [64,64,256],2)
+    output_block2=tf.keras.layers.MaxPool1D(pool_size=8)(x)
+
+    x=conv_block(output_block2, [128,128,512],3)
+    output_block3=tf.keras.layers.MaxPool1D(pool_size=4)(x)
+
+    x=conv_block(output_block3, [256,256,1024],4)
+    output_block4=tf.keras.layers.AvgPool1D(pool_size=2)(x)
+
+    x=tf.keras.layers.LSTM(256, return_sequences=True)(output_block4)
+    x=tf.keras.layers.Dropout(0.2)(x)
+    x=tf.keras.layers.LSTM(256, return_sequences=True)(x)
+    x=tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(1, activation='tanh', kernel_regularizer=tf.keras.regularizers.l2(1e-4)))(x)
+    x=tf.keras.layers.Flatten()(x)
+    model=tf.keras.Model(inputs=[input], outputs=[x])
+    print(model.summary())
     return model
 
 def correlation_coefficient_loss(y_true, y_pred):
