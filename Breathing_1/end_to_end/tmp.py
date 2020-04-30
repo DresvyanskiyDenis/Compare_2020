@@ -38,6 +38,8 @@ def pearson_corr(y_true, y_pred):
     return 1-result
 
 pearson_corr(x_tf, y_tf)'''
+import numpy as np
+import pandas as pd
 
 '''import numpy as np
 
@@ -45,7 +47,7 @@ from Breathing_1.end_to_end.utils import smoothing
 
 arr=np.array([1,2,3,4,5,6,7,8])
 res=smoothing(arr, 5)'''
-import tensorflow as tf
+'''import tensorflow as tf
 input_shape=(256000,1)
 
 
@@ -86,70 +88,93 @@ x=tf.keras.layers.LSTM(256, return_sequences=True)(x)
 x=tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(1, activation='tanh'))(x)
 x=tf.keras.layers.Flatten()(x)
 model=tf.keras.Model(inputs=[input], outputs=[x])
-print(model.summary())
+print(model.summary())'''
+
+predictions=np.array([
+    [
+        [1,2,3,4,5,6],
+        [5,6,7,8,9,0],
+        [2,3,6,5,4,3]
+    ]
+])
+
+timesteps=np.array([
+    [
+        [0.02, 0.04, 0.06, 0.08, 0.10, 0.12],
+        [0.06, 0.08, 0.10, 0.12, 0.14, 0.16],
+        [0.10, 0.12, 0.14, 0.16, 0.18, 0.20]
+    ]
+])
+
+class_dict={0:'train_00.wav'}
+true_values=pd.DataFrame(columns=['filename', 'timeFrame', 'upper_belt'], data=np.array([
+    ['train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav'],
+    [0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20],
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+]).T)
+#print(predictions.shape)
+#print(timesteps.shape)
+#print(true_values)
+
+tmp=pd.DataFrame(columns=['timeFrame', 'prediction'], data=np.concatenate((timesteps.reshape((-1,1)),predictions.reshape((-1,1))), axis=1))
+#print(tmp)
+
+print(tmp.groupby(by=['timeFrame']).mean())
+print(type(tmp.groupby(by=['timeFrame']).mean()))
+
+
+def new_concatenate_prediction(true_values, predicted_values, timesteps_labels, class_dict):
+    predicted_values=predicted_values.reshape(timesteps_labels.shape)
+    result_predicted_values=pd.DataFrame(columns=true_values.columns, dtype='float32')
+    result_predicted_values['filename']=result_predicted_values['filename'].astype('str')
+    for instance_idx in range(predicted_values.shape[0]):
+        predicted_values_tmp=predicted_values[instance_idx].reshape((-1,1))
+        timesteps_labels_tmp=timesteps_labels[instance_idx].reshape((-1,1))
+        tmp=pd.DataFrame(columns=['timeFrame', 'upper_belt'], data=np.concatenate((timesteps_labels_tmp, predicted_values_tmp), axis=1))
+        tmp=tmp.groupby(by=['timeFrame']).mean().reset_index()
+        tmp['filename']=class_dict[instance_idx]
+        result_predicted_values=result_predicted_values.append(tmp)
+    result_predicted_values['timeFrame']=result_predicted_values['timeFrame'].astype('float32')
+    result_predicted_values['upper_belt'] = result_predicted_values['upper_belt'].astype('float32')
+    return result_predicted_values[true_values.columns]
+
+def concatenate_prediction(true_values, predicted_values, timesteps_labels, class_dict):
+    predicted_values=predicted_values.reshape(timesteps_labels.shape)
+    tmp=np.zeros(shape=(true_values.shape[0],3))
+    result_predicted_values=pd.DataFrame(data=tmp, columns=true_values.columns, dtype='float32')
+    result_predicted_values['filename']=result_predicted_values['filename'].astype('str')
+    index_temp=0
+    for instance_idx in range(predicted_values.shape[0]):
+        timesteps=np.unique(timesteps_labels[instance_idx])
+        for timestep in timesteps:
+            # assignment for filename and timestep
+            result_predicted_values.iloc[index_temp,0]=class_dict[instance_idx]
+            result_predicted_values.iloc[index_temp,1]=timestep
+            # calculate mean of windows
+            result_predicted_values.iloc[index_temp,2]=np.mean(predicted_values[instance_idx,timesteps_labels[instance_idx]==timestep])
+            index_temp+=1
+        #print('concatenation...instance:', instance_idx, '  done')
+
+    return result_predicted_values
+
+print(concatenate_prediction(true_values, predictions, timesteps, class_dict))
+print(new_concatenate_prediction(true_values, predictions, timesteps, class_dict))
+
+a=concatenate_prediction(true_values, predictions, timesteps, class_dict)
+b=new_concatenate_prediction(true_values, predictions, timesteps, class_dict)
+b['timeFrame']=b['timeFrame'].astype('float32')
+b['upper_belt']=b['upper_belt'].astype('float32')
+
+print(concatenate_prediction(true_values, predictions, timesteps, class_dict)==new_concatenate_prediction(true_values, predictions, timesteps, class_dict))
 
 
 
 
 
-'''def conv_block(input_tensor, kernel_size, filters, stage, block, strides=(2, 2), trainable=True):
-    """A block that has a conv layer at shortcut.
-    # Arguments
-        input_tensor: input tensor
-        kernel_size: default 3, the kernel size of middle conv layer at main path
-        filters: list of integers, the filterss of 3 conv layer at main path
-        stage: integer, current stage label, used for generating layer names
-        block: 'a','b'..., current block label, used for generating layer names
-    # Returns
-        Output tensor for the block.
-    Note that from stage 3, the first conv layer at main path is with strides=(2,2)
-    And the shortcut should have strides=(2,2) as well
-    """
-    filters1, filters2, filters3 = filters
-    bn_axis = 3
 
-    conv_name_1 = 'conv' + str(stage) + '_' + str(block) + '_1x1_reduce'
-    bn_name_1 = 'conv' + str(stage) + '_' + str(block) + '_1x1_reduce/bn'
-    x = Conv2D(filters1, (1, 1), strides=strides,
-               kernel_initializer='orthogonal',
-               use_bias=False,
-               kernel_regularizer=l2(weight_decay),
-               trainable=trainable,
-               name=conv_name_1)(input_tensor)
-    x = BatchNormalization(axis=bn_axis, name=bn_name_1)(x)
-    x = Activation('relu')(x)
 
-    conv_name_2 = 'conv' + str(stage) + '_' + str(block) + '_3x3'
-    bn_name_2 = 'conv' + str(stage) + '_' + str(block) + '_3x3/bn'
-    x = Conv2D(filters2, kernel_size, padding='same',
-               kernel_initializer='orthogonal',
-               use_bias=False,
-               kernel_regularizer=l2(weight_decay),
-               trainable=trainable,
-               name=conv_name_2)(x)
-    x = BatchNormalization(axis=bn_axis, name=bn_name_2)(x)
-    x = Activation('relu')(x)
 
-    conv_name_3 = 'conv' + str(stage) + '_' + str(block) + '_1x1_increase'
-    bn_name_3 = 'conv' + str(stage) + '_' + str(block) + '_1x1_increase/bn'
-    x = Conv2D(filters3, (1, 1),
-               kernel_initializer='orthogonal',
-               use_bias=False,
-               kernel_regularizer=l2(weight_decay),
-               trainable=trainable,
-               name=conv_name_3)(x)
-    x = BatchNormalization(axis=bn_axis, name=bn_name_3)(x)
 
-    conv_name_4 = 'conv' + str(stage) + '_' + str(block) + '_1x1_proj'
-    bn_name_4 = 'conv' + str(stage) + '_' + str(block) + '_1x1_proj/bn'
-    shortcut = Conv2D(filters3, (1, 1), strides=strides,
-                      kernel_initializer='orthogonal',
-                      use_bias=False,
-                      kernel_regularizer=l2(weight_decay),
-                      trainable=trainable,
-                      name=conv_name_4)(input_tensor)
-    shortcut = BatchNormalization(axis=bn_axis, name=bn_name_4)(shortcut)
 
-    x = layers.add([x, shortcut])
-    x = Activation('relu')(x)
-    return x'''
+
+
