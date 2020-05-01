@@ -1,14 +1,18 @@
 import os
+import time
 # test
 from utils import load_data, prepare_data, create_model, concatenate_prediction, pearson_coef, \
-    correlation_coefficient_loss
+    correlation_coefficient_loss, new_concatenate_prediction
 import numpy as np
 import pandas as pd
+
+window_length=256000
+step=int(window_length*2/5)
 # train data
 path_to_train_data='/content/drive/My Drive/ComParE2020_Breathing/wav/'
 path_to_train_labels='/content/drive/My Drive/ComParE2020_Breathing/lab/'
 train_data, train_labels, train_dict, frame_rate=load_data(path_to_train_data, path_to_train_labels, 'train')
-prepared_train_data, prepared_train_labels, prepared_train_labels_timesteps=prepare_data(train_data, train_labels, train_dict, frame_rate, 128000, 51200)
+prepared_train_data, prepared_train_labels, prepared_train_labels_timesteps=prepare_data(train_data, train_labels, train_dict, frame_rate, window_length, step)
 # instance normalization
 #prepared_train_data, min_train, max_train=sample_minmax_normalization(prepared_train_data)
 # reshaping for training process
@@ -24,7 +28,7 @@ output_shape=(prepared_train_labels.shape[-1])
 path_to_validation_data='/content/drive/My Drive/ComParE2020_Breathing/wav/'
 path_to_validation_labels='/content/drive/My Drive/ComParE2020_Breathing/lab/'
 val_data, val_labels, val_dict, frame_rate=load_data(path_to_validation_data, path_to_validation_labels, 'devel')
-prepared_val_data, prepared_val_labels,prepared_val_labels_timesteps=prepare_data(val_data, val_labels, val_dict, frame_rate, 128000, 51200)
+prepared_val_data, prepared_val_labels,prepared_val_labels_timesteps=prepare_data(val_data, val_labels, val_dict, frame_rate, window_length, step)
 
 # reshaping for training process
 prepared_val_data=prepared_val_data.reshape((prepared_val_data.shape+(1,)))
@@ -39,7 +43,7 @@ if not os.path.exists(path_to_tmp_model):
 model=create_model(input_shape=input_shape)
 model.compile(optimizer='Adam', loss=correlation_coefficient_loss, metrics=['mse'])
 # params
-batch_size=50
+batch_size=30
 epochs=120
 best=0
 
@@ -56,12 +60,12 @@ for i in range(epochs):
     train_loss.append([history.history['loss'][0],history.history['mse'][0]])
     #model.save(path_to_tmp_model+'model.h5')
     #model.save_weights(path_to_tmp_model+'model_weights.h5')
-    if i%2==0:
+    if i%1==0:
         predicted_labels=model.predict(prepared_val_data, batch_size=batch_size)
-        concatenated_predicted_labels=concatenate_prediction(true_values=val_labels, predicted_values=predicted_labels,
+        concatenated_predicted_labels=new_concatenate_prediction(true_values=val_labels, predicted_values=predicted_labels,
                                                              timesteps_labels=prepared_val_labels_timesteps, class_dict=val_dict)
         prc_coef=pearson_coef(val_labels.iloc[:,2].values,concatenated_predicted_labels.iloc[:,2].values)
-        print('iteration:',i,'     pirson:',prc_coef)
+        print('iteration:',i,'     pearson_coef:',prc_coef)
         val_loss.append(prc_coef[0])
         pd.DataFrame(columns=['loss','mse'], data=train_loss).to_csv(
           path_to_stats+'train_loss.csv', index=False)
@@ -69,5 +73,5 @@ for i in range(epochs):
           path_to_stats+'val_prc_coefs.csv', index=False)
         if prc_coef[0]>best:
             best=prc_coef[0]
-            model.save('model.h5')
-            model.save_weights('model_weights.h5')
+            model.save(path_to_best_model+'model.h5')
+            model.save_weights(path_to_best_model+'model_weights.h5')

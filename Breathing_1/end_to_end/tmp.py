@@ -95,6 +95,11 @@ predictions=np.array([
         [1,2,3,4,5,6],
         [5,6,7,8,9,0],
         [2,3,6,5,4,3]
+    ],
+    [
+        [1, 2, 3, 4, 5, 6],
+        [5, 6, 7, 8, 9, 0],
+        [2, 3, 6, 5, 4, 3]
     ]
 ])
 
@@ -103,24 +108,21 @@ timesteps=np.array([
         [0.02, 0.04, 0.06, 0.08, 0.10, 0.12],
         [0.06, 0.08, 0.10, 0.12, 0.14, 0.16],
         [0.10, 0.12, 0.14, 0.16, 0.18, 0.20]
+    ],
+    [
+        [0.02, 0.04, 0.06, 0.08, 0.10, 0.12],
+        [0.06, 0.08, 0.10, 0.12, 0.14, 0.16],
+        [0.10, 0.12, 0.14, 0.16, 0.18, 0.20]
     ]
 ])
 
-class_dict={0:'train_00.wav'}
+class_dict={0:'train_00.wav',1:'train_01.wav'}
 true_values=pd.DataFrame(columns=['filename', 'timeFrame', 'upper_belt'], data=np.array([
-    ['train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav'],
-    [0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20],
-    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    ['train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_00.wav','train_01.wav','train_01.wav','train_01.wav','train_01.wav','train_01.wav','train_01.wav','train_01.wav','train_01.wav','train_01.wav','train_01.wav'],
+    [0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20,0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20],
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10,1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 ]).T)
-#print(predictions.shape)
-#print(timesteps.shape)
-#print(true_values)
 
-tmp=pd.DataFrame(columns=['timeFrame', 'prediction'], data=np.concatenate((timesteps.reshape((-1,1)),predictions.reshape((-1,1))), axis=1))
-#print(tmp)
-
-print(tmp.groupby(by=['timeFrame']).mean())
-print(type(tmp.groupby(by=['timeFrame']).mean()))
 
 
 def new_concatenate_prediction(true_values, predicted_values, timesteps_labels, class_dict):
