@@ -113,15 +113,19 @@ def sample_minmax_normalization(data, min=None, max=None):
 
 def conv_block(input_tensor,filters, block_number):
     filter1, filter2, filter3=filters
-    x = tf.keras.layers.Conv1D(filters=filter1, kernel_size=1, strides=1, activation=None, padding='same', kernel_regularizer=tf.keras.regularizers.l2(1e-4))(input_tensor)
+    x = tf.keras.layers.Conv1D(filters=filter1, kernel_size=1, strides=1, activation=None, padding='same',
+                              use_bias=False, kernel_regularizer=tf.keras.regularizers.l2(1e-4))(input_tensor)
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Activation(activation='relu')(x)
-    x = tf.keras.layers.Conv1D(filters=filter2, kernel_size=5, strides=1, activation=None, padding='same', kernel_regularizer=tf.keras.regularizers.l2(1e-4))(x)
+    x = tf.keras.layers.Conv1D(filters=filter2, kernel_size=5, strides=1, activation=None, padding='same',
+                              use_bias=False, kernel_regularizer=tf.keras.regularizers.l2(1e-4))(x)
     x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Activation(activation='relu')(x)
-    x = tf.keras.layers.Conv1D(filters=filter3, kernel_size=1, strides=1, activation=None, padding='same', kernel_regularizer=tf.keras.regularizers.l2(1e-4))(x)
+    x = tf.keras.layers.Conv1D(filters=filter3, kernel_size=1, strides=1, activation=None, padding='same',
+                              use_bias=False, kernel_regularizer=tf.keras.regularizers.l2(1e-4))(x)
     x = tf.keras.layers.BatchNormalization(name='last_conv_bn_block_'+str(block_number))(x)
-    shortcut = tf.keras.layers.Conv1D(filters=filter3, kernel_size=1, strides=1, activation=None, use_bias=False, kernel_regularizer=tf.keras.regularizers.l2(1e-4))(input_tensor)
+    shortcut = tf.keras.layers.Conv1D(filters=filter3, kernel_size=1, strides=1, activation=None,
+                              use_bias=False, kernel_regularizer=tf.keras.regularizers.l2(1e-4))(input_tensor)
     shortcut = tf.keras.layers.BatchNormalization(name='shortcut_bn_block_'+str(block_number))(shortcut)
     x = tf.keras.layers.add([x, shortcut])
     x = tf.keras.layers.Activation('relu')(x)
@@ -130,22 +134,22 @@ def conv_block(input_tensor,filters, block_number):
 
 def create_model(input_shape):
     input=tf.keras.layers.Input(shape=input_shape)
-    x=tf.keras.layers.Conv1D(filters=64, kernel_size=8, strides=1, activation=None, padding='same', kernel_regularizer=tf.keras.regularizers.l2(1e-4))(input)
+    x=tf.keras.layers.Conv1D(filters=128, kernel_size=8, strides=1, activation=None, padding='same', kernel_regularizer=tf.keras.regularizers.l2(1e-4))(input)
     x=tf.keras.layers.BatchNormalization(name='last_conv_bn_block_1')(x)
     x=tf.keras.layers.Activation(activation='relu')(x)
     output_block1=tf.keras.layers.MaxPool1D(pool_size=10)(x)
 
     x=conv_block(output_block1, [64,64,256],2)
-    output_block2=tf.keras.layers.MaxPool1D(pool_size=8)(x)
+    output_block2=tf.keras.layers.AvgPool1D(pool_size=4)(x)
 
     x=conv_block(output_block2, [128,128,512],3)
-    output_block3=tf.keras.layers.MaxPool1D(pool_size=4)(x)
+    output_block3=tf.keras.layers.AvgPool1D(pool_size=4)(x)
 
     x=conv_block(output_block3, [256,256,1024],4)
-    output_block4=tf.keras.layers.AvgPool1D(pool_size=2)(x)
+    output_block4=tf.keras.layers.AvgPool1D(pool_size=4)(x)
 
-    x=tf.keras.layers.LSTM(256, return_sequences=True)(output_block4)
-    x=tf.keras.layers.Dropout(0.2)(x)
+    x=tf.keras.layers.LSTM(512, return_sequences=True)(output_block4)
+    x=tf.keras.layers.Dropout(0.3)(x)
     x=tf.keras.layers.LSTM(256, return_sequences=True)(x)
     x=tf.keras.layers.TimeDistributed(tf.keras.layers.Dense(1, activation='tanh', kernel_regularizer=tf.keras.regularizers.l2(1e-4)))(x)
     x=tf.keras.layers.Flatten()(x)
@@ -203,11 +207,10 @@ def new_concatenate_prediction(true_values, predicted_values, timesteps_labels, 
         tmp=pd.DataFrame(columns=['timeFrame', 'upper_belt'], data=np.concatenate((timesteps_labels_tmp, predicted_values_tmp), axis=1))
         tmp=tmp.groupby(by=['timeFrame']).mean().reset_index()
         tmp['filename']=class_dict[instance_idx]
-        result_predicted_values=result_predicted_values.append(tmp)
+        result_predicted_values=result_predicted_values.append(tmp.copy(deep=True))
     result_predicted_values['timeFrame']=result_predicted_values['timeFrame'].astype('float32')
     result_predicted_values['upper_belt'] = result_predicted_values['upper_belt'].astype('float32')
     return result_predicted_values[true_values.columns]
-
 
 def load_test_data(path_to_data, path_to_labels, prefix):
     # labels
@@ -277,7 +280,6 @@ def smoothing(x, size_window):
         raise ValueError('size of window must be odd')
     weights=hanning(size_window)
     result=np.zeros(x.shape)
-    num_to_average=size_window
     for i in range(x.shape[0]):
         start=int(i-(size_window-1)/2)
         end=int(i+1+(size_window-1)/2)
@@ -285,11 +287,10 @@ def smoothing(x, size_window):
         for j in range(start, end):
             if j<0 or j>(x.shape[0]-1):
                 data.append(0)
-                num_to_average-=1 # because you need average your sum only on existing numbers
             else:
                 data.append(x[j])
         data=np.array(data)
         data=np.multiply(weights, data)
-        sum=data.sum()/num_to_average
+        sum=data.sum()/size_window
         result[i]=sum
     return result
