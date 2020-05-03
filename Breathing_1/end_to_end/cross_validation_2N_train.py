@@ -5,7 +5,7 @@ import numpy as np
 import scipy
 import tensorflow as tf
 import gc
-
+from keras import backend as K
 from Breathing_1.end_to_end.utils import create_model, load_data, prepare_data, correlation_coefficient_loss
 
 class MyCustomCallback(tf.keras.callbacks.Callback):
@@ -80,41 +80,56 @@ def concatenate_prediction(predicted_values, labels_timesteps, filenames_dict, c
             result_predicted_values_idx+=1
     return result_predicted_values
 
+def new_concatenate_prediction(predicted_values, timesteps_labels, class_dict, columns_for_real_labels=['filename', 'timeFrame', 'upper_belt']):
+    predicted_values=predicted_values.reshape(timesteps_labels.shape)
+    result_predicted_values=pd.DataFrame(columns=columns_for_real_labels, dtype='float32')
+    result_predicted_values['filename']=result_predicted_values['filename'].astype('str')
+    for instance_idx in range(predicted_values.shape[0]):
+        predicted_values_tmp=predicted_values[instance_idx].reshape((-1,1))
+        timesteps_labels_tmp=timesteps_labels[instance_idx].reshape((-1,1))
+        tmp=pd.DataFrame(columns=['timeFrame', 'upper_belt'], data=np.concatenate((timesteps_labels_tmp, predicted_values_tmp), axis=1))
+        tmp=tmp.groupby(by=['timeFrame']).mean().reset_index()
+        tmp['filename']=class_dict[instance_idx]
+        result_predicted_values=result_predicted_values.append(tmp.copy(deep=True))
+    result_predicted_values['timeFrame']=result_predicted_values['timeFrame'].astype('float32')
+    result_predicted_values['upper_belt'] = result_predicted_values['upper_belt'].astype('float32')
+    return result_predicted_values[columns_for_real_labels]
+
 def choose_real_labs_only_with_filenames(labels, filenames):
     return labels[labels['filename'].isin(filenames)]
 
 
 
-'''# params
-length_sequence=256000
-step_sequence=102400
-batch_size=45
-epochs=150
+# params
+length_sequence=192000
+step_sequence=int(length_sequence*2/5)
+batch_size=19
+epochs=110
 data_parts=2
 path_to_save_best_model='best_models/'
 if not os.path.exists(path_to_save_best_model):
     os.mkdir(path_to_save_best_model)
-path_to_tmp_model='tmp_model/'
-if not os.path.exists(path_to_tmp_model):
-    os.mkdir(path_to_tmp_model)
-
+path_to_stats='stats/'
+if not os.path.exists(path_to_stats):
+    os.mkdir(path_to_stats)
 # train data
-path_to_train_data='/content/drive/My Drive/ComParE2020_Breathing/wav/'
-path_to_train_labels='/content/drive/My Drive/ComParE2020_Breathing/lab/'
+path_to_train_data='C:/Users/Dresvyanskiy/Desktop/ComParE2020_Breathing/wav/'
+path_to_train_labels='C:/Users/Dresvyanskiy/Desktop/ComParE2020_Breathing/lab/'
 train_data, train_labels, train_dict, frame_rate=load_data(path_to_train_data, path_to_train_labels, 'train')
 prepared_train_data, prepared_train_labels, prepared_train_labels_timesteps=prepare_data(train_data, train_labels, train_dict, frame_rate, length_sequence, step_sequence)
 train_parts=divide_data_on_parts(prepared_train_data, prepared_train_labels, prepared_train_labels_timesteps, parts=data_parts, filenames_dict=train_dict)
 
 # devel data
-path_to_devel_data='/content/drive/My Drive/ComParE2020_Breathing/wav/'
-path_to_devel_labels='/content/drive/My Drive/ComParE2020_Breathing/lab/'
+path_to_devel_data='C:/Users/Dresvyanskiy/Desktop/ComParE2020_Breathing/wav/'
+path_to_devel_labels='C:/Users/Dresvyanskiy/Desktop/ComParE2020_Breathing/lab/'
 devel_data, devel_labels, devel_dict, frame_rate=load_data(path_to_devel_data, path_to_devel_labels, 'devel')
 prepared_devel_data, prepared_devel_labels,prepared_devel_labels_timesteps=prepare_data(devel_data, devel_labels, devel_dict, frame_rate, length_sequence, step_sequence)
 devel_parts=divide_data_on_parts(prepared_devel_data, prepared_devel_labels, prepared_devel_labels_timesteps, parts=data_parts, filenames_dict=devel_dict)
 
-for index_of_part in range(0, 3):
+for index_of_part in range(0, 4):
     best_result=0
-    coefs=[]
+    train_loss=[]
+    val_loss=[]
     train_dataset, val_dataset=form_train_and_val_datasets(train_parts, devel_parts, index_for_validation_part=index_of_part)
     train_d, train_lbs, train_timesteps, _ = extract_and_reshape_list_of_parts(list_of_parts=train_dataset)
     val_d, val_lbs, val_timesteps, val_filenames_dict=extract_and_reshape_list_of_parts(list_of_parts=val_dataset)
@@ -126,23 +141,27 @@ for index_of_part in range(0, 3):
     else:
         ground_truth_labels = choose_real_labs_only_with_filenames(devel_labels, list(val_filenames_dict.values()))
     model=create_model(input_shape=(train_d.shape[-2], train_d.shape[-1]))
-    model.compile(optimizer='Adam', loss=correlation_coefficient_loss, metrics=['mse', 'mae'])
+    model.compile(optimizer='Adam', loss=correlation_coefficient_loss, metrics=['mse'])
     for epoch in range(epochs):
         permutations=np.random.permutation(train_d.shape[0])
         train_d, train_lbs=train_d[permutations], train_lbs[permutations]
-        model.fit(train_d, train_lbs, batch_size=batch_size, epochs=1,
-                  shuffle=True, verbose=1, use_multiprocessing=True, 
-                  validation_data=(val_d, _val_lbs), callbacks=[MyCustomCallback()])
-        model.save_weights(path_to_tmp_model+'tmp_model_weights_idx_of_part_'+str(index_of_part)
-                          +'_epoch_'+str(epoch)+'.h5')
-        if epoch>2 and epoch%2==0:
+        history=model.fit(train_d, train_lbs, batch_size=batch_size, epochs=1,
+                shuffle=True, verbose=1, use_multiprocessing=True,
+                validation_data=(val_d, _val_lbs), callbacks=[MyCustomCallback()])
+        train_loss.append([history.history['loss'][0],history.history['mse'][0]])
+        if True:
             predicted_labels = model.predict(val_d, batch_size=batch_size)
-            concatenated_predicted_labels=concatenate_prediction(predicted_labels, val_timesteps, val_filenames_dict)
+            concatenated_predicted_labels=new_concatenate_prediction(predicted_labels, val_timesteps, val_filenames_dict)
             prc_coef=scipy.stats.pearsonr(ground_truth_labels.iloc[:,2].values,concatenated_predicted_labels.iloc[:,2].values)
-            print('epoch:', epoch, '     pirson:', prc_coef)
-            coefs.append(np.abs(prc_coef[0]))
+            print('epoch:', epoch, '     pearson:', prc_coef)
+
+            val_loss.append(prc_coef[0])
+            pd.DataFrame(columns=['loss','mse'], data=train_loss).to_csv(
+              path_to_stats+'train_loss_part_'+str(index_of_part)+'.csv', index=False)
+            pd.DataFrame(columns=['prc_coef'], data=val_loss).to_csv(
+              path_to_stats+'val_prc_coefs_part_'+str(index_of_part)+'.csv', index=False)
             if prc_coef[0] > best_result:
                 best_result = prc_coef[0]
                 model.save_weights(path_to_save_best_model+'best_model_weights_idx_of_part_'+str(index_of_part)+'.h5')
     del model
-    K.clear_session()'''
+    K.clear_session()
